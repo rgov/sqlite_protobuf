@@ -34,6 +34,16 @@ static void protobuf_load(sqlite3_context *context,
                           int argc,
                           sqlite3_value **argv)
 {
+    // Confirm that we have permission to load extensions
+    int enabled, err;
+    err = sqlite3_db_config(sqlite3_context_db_handle(context),
+        SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION, -1, &enabled);
+    if (err != SQLITE_OK || !enabled) {
+        sqlite3_result_error(context, "Extension loading is disabled", -1);
+        return;
+    }
+    
+    // Load the library
     const std::string path = string_from_sqlite3_value(argv[0]);
     void *handle = dlopen(path.c_str(), RTLD_GLOBAL);
     if (!handle) {
