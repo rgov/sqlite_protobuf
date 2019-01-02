@@ -19,10 +19,12 @@ This project is built with [CMake][]:
 
 [CMake]: https://cmake.org
 
-    mkdir build
-    cd build
-    cmake ..
-    make
+    mkdir build && cd build
+    cmake .. && cmake --build . && ctest
+
+Running the test suite requires Python and [Pipenv][].
+
+[Pipenv]: https://github.com/pypa/pipenv
 
 Once the extension is built, you can load into SQLite at runtime. For the
 `sqlite3` tool, use:
@@ -120,6 +122,9 @@ type descriptors.
 
     SELECT protobuf_load("./libaddressbook.dylib");
 
-**Security note:** This calls `dlopen()` on the library. If untrusted users can
-send arbitrary queries (such as through SQL injection), this function could be
-leveraged to gain code execution on your database host.
+For security reasons, you must first [enable extension loading][ext-load]. It is
+strongly recommended that you disable extension loading afterwards. Otherwise,
+if untrusted users can send arbitrary queries (such as through SQL injection),
+this function could be leveraged to gain code execution on your database host.
+
+[ext-load]: https://www.sqlite.org/c3ref/enable_load_extension.html

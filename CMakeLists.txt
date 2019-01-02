@@ -8,3 +8,6 @@ set(CMAKE_MODULE_PATH
 
 add_subdirectory(src)
 add_subdirectory(example)
+
+enable_testing()
+add_subdirectory(tests)
