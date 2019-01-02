@@ -1,0 +1,21 @@
+// Adapted from the addressbook.proto sample code from
+// https://github.com/protocolbuffers/protobuf/blob/master/examples/addressbook.proto
+
+syntax = "proto3";
+
+message Person {
+  string name = 1;
+
+  enum PhoneType {
+    MOBILE = 0;
+    HOME = 1;
+    WORK = 2;
+  }
+
+  message PhoneNumber {
+    string number = 1;
+    PhoneType type = 2;
+  }
+
+  repeated PhoneNumber phones = 4;
+}
