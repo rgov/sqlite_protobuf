@@ -11,7 +11,9 @@ endif()
 
 # Discover tests
 execute_process(
-    COMMAND cmake -E env "WORKON_HOME=${CMAKE_CURRENT_BINARY_DIR}"
+    COMMAND cmake -E env
+                "CMAKE_CURRENT_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}"
+                "WORKON_HOME=${CMAKE_CURRENT_BINARY_DIR}"
             pipenv run python "${CMAKE_CURRENT_SOURCE_DIR}/list_tests.py"
                 unit
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"

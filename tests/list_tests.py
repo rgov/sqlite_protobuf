@@ -13,10 +13,10 @@ import unittest
 def print_suite(suite):
   if isinstance(suite, unittest.suite.TestSuite):
     for x in suite:
-      print_suite(x)
+      yield from print_suite(x)
   else:
     m = re.match(r'^(.+) \((.*)\)$', str(suite))
-    print("{1}.{0}".format(*m.groups()))
+    yield "{1}.{0}".format(*m.groups())
 
 
 if __name__ == '__main__':
@@ -24,4 +24,7 @@ if __name__ == '__main__':
   argparser.add_argument('dir')
   args = argparser.parse_args()
 
-  print_suite(unittest.defaultTestLoader.discover(args.dir))
+  for test in print_suite(unittest.defaultTestLoader.discover(args.dir)):
+    if test.startswith('unittest.loader.'):
+      raise Exception('Failed to load %s' % test)
+    print(test)
