@@ -14,6 +14,7 @@ cache:
 
 install:
   - set -e
+  - DEB_HOST_MULTIARCH=$(dpkg-architecture -qDEB_HOST_MULTIARCH)
 
   - pip3 install --user pipenv
 
@@ -22,7 +23,7 @@ install:
         wget -O sqlite.tar.gz https://www.sqlite.org/2018/sqlite-autoconf-3260000.tar.gz;
         rm -Rf sqlite && mkdir sqlite;
         tar -C sqlite --strip-components 1 -xzf sqlite.tar.gz && rm -f sqlite.tar.gz;
-        cd sqlite && ./configure --prefix=/usr && make && touch .built && cd ..;
+        cd sqlite && ./configure --prefix=/usr --libdir=/usr/lib/${DEB_HOST_MULTIARCH} && make && touch .built && cd ..;
     fi
   - cd sqlite && sudo make install && cd ..
   - popd
@@ -32,7 +33,7 @@ install:
         wget -O protobuf.tar.gz https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-python-3.6.1.tar.gz;
         rm -Rf protobuf && mkdir protobuf;
         tar -C protobuf --strip-components 1 -xzf protobuf.tar.gz && rm -f protobuf.tar.gz;
-        cd protobuf && ./configure --prefix=/usr && make && touch .built && cd ..;
+        cd protobuf && ./configure --prefix=/usr --libdir=/usr/lib/${DEB_HOST_MULTIARCH} && make && touch .built && cd ..;
     fi
   - cd protobuf && sudo make install && cd ..
   - popd
