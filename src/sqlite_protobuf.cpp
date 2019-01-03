@@ -55,7 +55,12 @@ static void protobuf_load(sqlite3_context *context,
     int enabled, err;
     err = sqlite3_db_config(sqlite3_context_db_handle(context),
         SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION, -1, &enabled);
-    if (err != SQLITE_OK || !enabled) {
+    if (err != SQLITE_OK) {
+        auto error_msg = std::string("Failed to get load_extension setting: ")
+            + sqlite3_errmsg(sqlite3_context_db_handle(context));
+        sqlite3_result_error(context, error_msg.c_str(), -1);
+        return;
+    } else if (!enabled) {
         sqlite3_result_error(context, "Extension loading is disabled", -1);
         return;
     }
@@ -344,6 +349,9 @@ int sqlite3_sqliteprotobuf_init(sqlite3 *db,
     int err;
     
     SQLITE_EXTENSION_INIT2(pApi);
+    
+    // TODO: Check that we are using at least version 3.13.0
+    // (which is when SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION was added)
     
     err = sqlite3_create_function(db, "protobuf_load", 1,
         SQLITE_UTF8, 0, protobuf_load, 0, 0);
