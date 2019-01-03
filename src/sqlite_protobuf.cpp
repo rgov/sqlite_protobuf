@@ -45,9 +45,10 @@ static void protobuf_load(sqlite3_context *context,
     
     // Load the library
     const std::string path = string_from_sqlite3_value(argv[0]);
-    void *handle = dlopen(path.c_str(), RTLD_GLOBAL);
+    void *handle = dlopen(path.c_str(), RTLD_LAZY | RTLD_GLOBAL);
     if (!handle) {
-        sqlite3_result_error(context, "Could not load library", -1);
+        auto error_msg = std::string("Could not load library: ") + dlerror();
+        sqlite3_result_error(context, error_msg.c_str(), -1);
         return;
     }
 

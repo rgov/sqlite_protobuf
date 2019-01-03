@@ -28,12 +28,12 @@ class TestProtobufLoad(unittest.TestCase):
 
   def test_load_enabled(self):
     self.db.enable_load_extension(True)
-    self.db.execute('SELECT protobuf_load("%s")' % get_addressbook_library())
+    self.db.execute('SELECT protobuf_load(?)', (get_addressbook_library(),))
 
   def test_load_disabled(self):
     self.db.enable_load_extension(False)
     with self.assertRaisesRegexp(sqlite3.OperationalError, 'Extension loading'):
-      self.db.execute('SELECT protobuf_load("%s")' % get_addressbook_library())
+      self.db.execute('SELECT protobuf_load(?)', (get_addressbook_library(),))
 
 
 if __name__ == '__main__':
