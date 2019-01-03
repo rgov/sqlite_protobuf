@@ -1,3 +1,5 @@
+[![Continuous integration status](https://travis-ci.org/rgov/sqlite-protobuf.svg?branch=master)](https://travis-ci.org/rgov/sqlite-protobuf)
+
 # Protobuf Extension for SQLite
 
 This project implements a [run-time loadable extension][ext] for [SQLite][]. It
@@ -22,7 +24,8 @@ This project is built with [CMake][]:
     mkdir build && cd build
     cmake .. && cmake --build . && ctest
 
-Running the test suite requires Python and [Pipenv][].
+The minimum supported SQLite version is probably 3.13.0. Running the test suite
+requires Python and [Pipenv][].
 
 [Pipenv]: https://github.com/pypa/pipenv
 
