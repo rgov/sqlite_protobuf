@@ -1,6 +1,7 @@
 language: minimal
 
 dist: xenial
+python: 3.7
 
 addons:
   apt:
