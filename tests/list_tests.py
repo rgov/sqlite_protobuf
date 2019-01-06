@@ -6,17 +6,19 @@ This tool discovers tests in a directory and outputs a list of
 '''
 
 import argparse
-import re
 import unittest
+import sys
 
 
-def print_suite(suite):
+def iter_tests(suite):
   if isinstance(suite, unittest.suite.TestSuite):
     for x in suite:
-      yield from print_suite(x)
+      yield from iter_tests(x)
+  elif isinstance(suite, unittest.case.TestCase):
+    yield suite  # actually a test case, not a suite
   else:
-    m = re.match(r'^(.+) \((.*)\)$', str(suite))
-    yield "{1}.{0}".format(*m.groups())
+    raise Exception('Unexpected object in test suite hierarchy: %s' %
+      (suite.__class__.__mro__))
 
 
 if __name__ == '__main__':
@@ -24,7 +26,24 @@ if __name__ == '__main__':
   argparser.add_argument('dir')
   args = argparser.parse_args()
 
-  for test in print_suite(unittest.defaultTestLoader.discover(args.dir)):
-    if test.startswith('unittest.loader.'):
-      raise Exception('Failed to load %s' % test)
-    print(test)
+  exit_code = 0
+  
+  for test in iter_tests(unittest.defaultTestLoader.discover(args.dir)):
+    if isinstance(test, unittest.loader._FailedTest):
+      print(test._exception, file=sys.stderr)
+      exit_code = 1
+    elif test.__class__.__module__ == 'unittest.loader':
+      print('Unexpected failure:', file=sys.stderr)
+      print('MRO:', test.__class__.__mro__, file=sys.stderr)
+      __import__('pprint').pprint(test.__dict__, stream=sys.stderr)
+      exit_code = 0
+    else:
+      if test._testMethodName == 'runTest':
+        name = '%s.%s' % \
+          (test.__module__, test.__class__.__name__)
+      else:
+        name = '%s.%s.%s' % \
+          (test.__module__, test.__class__.__name__, test._testMethodName)
+      print(name)
+
+  sys.exit(exit_code)
