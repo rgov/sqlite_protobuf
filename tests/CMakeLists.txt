@@ -1,4 +1,5 @@
 # Create the virtual environment
+message("Setting up Python virtual environment")
 execute_process(
     COMMAND cmake -E env "WORKON_HOME=${CMAKE_CURRENT_BINARY_DIR}"
             pipenv install
@@ -10,6 +11,7 @@ if(NOT "${RETURN_CODE}" STREQUAL "0")
 endif()
 
 # Discover tests
+message("Discovering Python unit tests")
 execute_process(
     COMMAND cmake -E env
                 "CMAKE_CURRENT_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}"
