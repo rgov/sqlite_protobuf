@@ -6,6 +6,7 @@ from utils import *
 
 class TestProtobufExtract(SQLiteProtobufTestCase):
   __PROTOBUF__ = '''
+  syntax = "proto2";
   message Person {
     required string name = 1;
   }

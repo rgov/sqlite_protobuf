@@ -6,6 +6,7 @@ from utils import *
 
 class TestProtobufLoad(SQLiteProtobufTestCase):
   __PROTOBUF__ = '''
+  syntax = "proto2";
   message Empty { }
   '''
   
