@@ -20,7 +20,9 @@ Tests written in Python use the [`unittest`][pyunittest] unit testing framework.
 [pyunittest]: https://docs.python.org/3/library/unittest.html
 
 Normally, `unittest` performs its own test discovery. To inform CTest about each
-unit test, CMake runs the `list_tests.py` tool and parses its output.
+unit test, CMake runs the `list_tests.py` tool and parses its output. It is
+important that tests do not expect any resources to have been built at module
+load time, or the initial test discovery will fail.
 
 Tests are executed inside a [Pipenv][] virtual environment described by the
 Pipfile. When a test is run, the working directory is the test's *source

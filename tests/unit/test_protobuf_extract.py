@@ -7,11 +7,12 @@ import unittest
 import sys
 
 
-sys.path.append(os.path.join(
-  os.environ['CMAKE_CURRENT_BINARY_DIR'],
-  '..', 'example'))
+if 'IN_TEST_DISCOVERY' not in os.environ:
+  sys.path.append(os.path.join(
+    os.environ['CMAKE_CURRENT_BINARY_DIR'],
+    '..', 'example'))
 
-from AddressBook_pb2 import Person
+  from AddressBook_pb2 import Person
 
 
 def get_sqlite_protobuf_library():

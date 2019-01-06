@@ -7,6 +7,7 @@ This tool discovers tests in a directory and outputs a list of
 
 import argparse
 import unittest
+import os
 import sys
 
 
@@ -27,6 +28,10 @@ if __name__ == '__main__':
   args = argparser.parse_args()
 
   exit_code = 0
+
+  # This is a signal to the modules we load that we are discovering, and not to
+  # expect any built resources to be present at load time
+  os.environ['IN_TEST_DISCOVERY'] = 'YES'
   
   for test in iter_tests(unittest.defaultTestLoader.discover(args.dir)):
     if isinstance(test, unittest.loader._FailedTest):
