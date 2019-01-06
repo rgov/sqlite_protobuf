@@ -7,6 +7,3 @@ verify_ssl = true
 
 [packages]
 protobuf = "*"
-
-[requires]
-python_version = "3.7"

@@ -1,0 +1,17 @@
+version: 2
+
+jobs:
+  build:
+    docker:
+      - image: rgov/sqlite_protobuf_build:latest
+    steps:
+      - checkout
+      - run:
+          name: Configure
+          command: mkdir build && cd build && cmake -G Ninja ..
+      - run:
+          name: Build
+          command: cd build && cmake --build .
+      - run:
+          name: Test
+          command: cd build && ctest --output-on-failure
