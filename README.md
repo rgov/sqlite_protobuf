@@ -1,4 +1,4 @@
-[![Continuous integration status](https://travis-ci.org/rgov/sqlite_protobuf.svg?branch=master)](https://travis-ci.org/rgov/sqlite_protobuf)
+[![CircleCI](https://circleci.com/gh/rgov/sqlite_protobuf.svg?style=svg)](https://circleci.com/gh/rgov/sqlite_protobuf)
 
 # Protobuf Extension for SQLite
 
