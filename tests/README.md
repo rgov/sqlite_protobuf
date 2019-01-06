@@ -19,6 +19,10 @@ Tests written in Python use the [`unittest`][pyunittest] unit testing framework.
 
 [pyunittest]: https://docs.python.org/3/library/unittest.html
 
+Unit tests should ordinarily inherit from the `SQLiteProtobufTestCase` class,
+which handles setting up the database, compiling Protobuf definitions, and
+issuing SQL queries.
+
 Normally, `unittest` performs its own test discovery. To inform CTest about each
 unit test, CMake runs the `list_tests.py` tool and parses its output. It is
 important that tests do not expect any resources to have been built at module
