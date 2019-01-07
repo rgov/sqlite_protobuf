@@ -4,7 +4,7 @@ import unittest
 from utils import *
 
 
-class TestProtobufExtract(SQLiteProtobufTestCase):
+class TestProtobufExtract(SQLiteProtobufTestCase, unittest.TestCase):
   __PROTOBUF__ = '''
   syntax = "proto2";
   message Person {

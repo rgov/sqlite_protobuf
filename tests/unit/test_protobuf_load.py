@@ -4,7 +4,7 @@ import unittest
 from utils import *
 
 
-class TestProtobufLoad(SQLiteProtobufTestCase):
+class TestProtobufLoad(SQLiteProtobufTestCase, unittest.TestCase):
   __PROTOBUF__ = '''
   syntax = "proto2";
   message Empty { }
