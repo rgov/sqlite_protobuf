@@ -149,13 +149,13 @@ static void protobuf_extract(sqlite3_context *context,
             case FieldDescriptor::CppType::CPPTYPE_UINT32:
                 sqlite3_log(SQLITE_WARNING,
                     "Protobuf field \"%s\" is unsigned, but SQLite does not "
-                    "support unsigned types");
+                    "support unsigned types", field->full_name().c_str());
                 sqlite3_result_int(context, field->default_value_uint32());
                 return;
             case FieldDescriptor::CppType::CPPTYPE_UINT64:
                 sqlite3_log(SQLITE_WARNING,
                     "Protobuf field \"%s\" is unsigned, but SQLite does not "
-                    "support unsigned types");
+                    "support unsigned types", field->full_name().c_str());
                 sqlite3_result_int64(context, field->default_value_uint64());
                 return;
             case FieldDescriptor::CppType::CPPTYPE_DOUBLE:
@@ -173,10 +173,25 @@ static void protobuf_extract(sqlite3_context *context,
                     field->default_value_enum()->number());
                 return;
             case FieldDescriptor::CppType::CPPTYPE_STRING:
-                sqlite3_result_text(context,
-                    field->default_value_string().c_str(),
-                    field->default_value_string().length(),
-                    SQLITE_TRANSIENT);
+                switch(field->type()) {
+                default:
+                    // fall through, but log
+                    sqlite3_log(SQLITE_WARNING,
+                        "Protobuf field \"%s\" is an unexpected string type",
+                        field->full_name().c_str());
+                case FieldDescriptor::Type::TYPE_STRING:
+                    sqlite3_result_text(context,
+                        field->default_value_string().c_str(),
+                        field->default_value_string().length(),
+                        SQLITE_TRANSIENT);
+                    break;
+                case FieldDescriptor::Type::TYPE_BYTES:
+                    sqlite3_result_blob(context,
+                        field->default_value_string().c_str(),
+                        field->default_value_string().length(),
+                        SQLITE_TRANSIENT);
+                    break;
+                }
                 return;
             case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
                 sqlite3_result_null(context);
@@ -302,8 +317,21 @@ static void protobuf_extract(sqlite3_context *context,
                 std::string value = field->is_repeated()
                     ? reflection->GetRepeatedString(*message, field, field_index)
                     : reflection->GetString(*message, field);
-                sqlite3_result_text(context, value.c_str(), value.length(),
-                    SQLITE_TRANSIENT);
+                switch(field->type()) {
+                default:
+                    // fall through, but log
+                    sqlite3_log(SQLITE_WARNING,
+                        "Protobuf field \"%s\" is an unexpected string type",
+                        field->full_name().c_str());
+                case FieldDescriptor::Type::TYPE_STRING:
+                    sqlite3_result_text(context, value.c_str(), value.length(),
+                        SQLITE_TRANSIENT);
+                    break;
+                case FieldDescriptor::Type::TYPE_BYTES:
+                    sqlite3_result_blob(context, value.c_str(), value.length(),
+                        SQLITE_TRANSIENT);
+                    break;
+                }
                 return;
             }
             case FieldDescriptor::CppType::CPPTYPE_MESSAGE:
