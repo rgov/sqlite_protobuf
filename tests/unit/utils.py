@@ -2,6 +2,7 @@ import atexit
 import glob
 import importlib.util
 import os
+import shlex
 import shutil
 import sqlite3
 import subprocess
@@ -19,7 +20,7 @@ def get_sqlite_protobuf_library():
 def get_compiler():
   if 'CXX' in os.environ:
     return os.environ['CXX']
-  for compiler in ('clang++', 'g++'):
+  for compiler in ('clang++', 'g++', 'c++'):
     try:
       path = subprocess.check_output(['which', compiler])
       return path.rstrip()
@@ -42,16 +43,27 @@ def compile_proto(proto):
   module = importlib.util.module_from_spec(spec)
   spec.loader.exec_module(module)
 
-  args = ['-std=c++11', '-dynamiclib', '-lprotobuf']
+  # Build up the compiler command
+  cmd = [get_compiler(), '-std=c++11', '-fPIC']
+
+  # Ask pkg-config what flags we need to link to libprotobuf
+  pkgcfg = subprocess.check_output(['pkg-config', '--cflags', '--libs',
+    'protobuf'])
+  cmd.extend(shlex.split(pkgcfg.decode('utf-8')))
+
+  # Add platform-specific flags
   if sys.platform == 'darwin':
     library = os.path.join(workdir, 'definitions.dylib')
-    args.append('-dynamiclib')
+    cmd.append('-dynamiclib')
   else:
     library = os.path.join(workdir, 'definitions.so')
-    args.append('-shared')
-  args.extend(['-o', library, cxxpath])
-  subprocess.check_call([get_compiler()] + args)
+    cmd.append('-shared')
+  cmd.extend(['-o', library])
   module.protobuf_library = library
+
+  # Invoke the compiler
+  cmd.append(cxxpath)
+  subprocess.check_call(cmd)
 
   atexit.register(shutil.rmtree, workdir)
   return module
