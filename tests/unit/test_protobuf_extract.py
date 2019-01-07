@@ -24,7 +24,7 @@ class TestProtobufExtract(SQLiteProtobufTestCase):
     )
   
   def test_extract_nonroot(self):
-    with self.assertRaisesRegexp(sqlite3.OperationalError, 'Invalid path'):
+    with self.assertRaisesRegex(sqlite3.OperationalError, 'Invalid path'):
       self.protobuf_extract(self.person, 'Person', '#')
 
 

@@ -35,7 +35,7 @@ foreach(TEST ${UNIT_TESTS})
         COMMAND cmake -E env
                     "CMAKE_CURRENT_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}"
                     "WORKON_HOME=${CMAKE_CURRENT_BINARY_DIR}"
-                pipenv run python -m unittest -v "${TEST}"
+                pipenv run python -X faulthandler -m unittest -v "${TEST}"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/unit"
     )
 endforeach()

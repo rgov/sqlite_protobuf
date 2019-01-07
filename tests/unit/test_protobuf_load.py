@@ -16,7 +16,7 @@ class TestProtobufLoad(SQLiteProtobufTestCase):
 
   def test_load_disabled(self):
     self.db.enable_load_extension(False)
-    with self.assertRaisesRegexp(sqlite3.OperationalError, 'Extension loading'):
+    with self.assertRaisesRegex(sqlite3.OperationalError, 'Extension loading'):
       self.protobuf_load(self.proto.protobuf_library)
 
 

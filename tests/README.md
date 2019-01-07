@@ -33,4 +33,4 @@ Pipfile. When a test is run, the working directory is the test's *source
 directory*. The environment variable `CMAKE_CURRENT_BINARY_DIR` is set to the
 corresponding CMake binary directory relative to the build directory.
 
-[Pipenv]: https://github.com/pypa/pipenvv
+[Pipenv]: https://github.com/pypa/pipenv
