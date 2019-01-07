@@ -89,6 +89,14 @@ class SQLiteProtobufTestCase(unittest.TestCase):
     c.execute('SELECT protobuf_extract(?, ?, ?)', (data, message_type, path))
     return c.fetchone()[0]
   
+  def protobuf_extract_result_type(self, data, message_type, path):
+    if hasattr(data, 'SerializeToString'):
+      data = data.SerializeToString()
+    c = self.db.cursor()
+    c.execute('SELECT typeof(protobuf_extract(?, ?, ?))',
+      (data, message_type, path))
+    return c.fetchone()[0].upper()
+  
   def protobuf_load(self, path):
     self.db.execute('SELECT protobuf_load(?)', (path,))
 

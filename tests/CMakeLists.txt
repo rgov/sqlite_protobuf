@@ -39,3 +39,7 @@ foreach(TEST ${UNIT_TESTS})
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/unit"
     )
 endforeach()
+
+# Inform the user that tests were discovered
+list(LENGTH UNIT_TESTS UNIT_TEST_COUNT)
+message("Discovered ${UNIT_TEST_COUNT} Python unit tests")
