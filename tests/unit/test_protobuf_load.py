@@ -1,39 +1,23 @@
 #!/usr/bin/env python
-
-import glob
-import os
-import sqlite3
 import unittest
 
-
-def get_sqlite_protobuf_library():
-  return next(glob.iglob(os.path.join(
-    os.environ['CMAKE_CURRENT_BINARY_DIR'],
-    '..', 'src', 'libsqlite_protobuf.*')))
-
-def get_addressbook_library():
-  return next(glob.iglob(os.path.join(
-    os.environ['CMAKE_CURRENT_BINARY_DIR'],
-    '..', 'example', 'libaddressbook.*')))
+from utils import *
 
 
-class TestProtobufLoad(unittest.TestCase):
-  def setUp(self):
-    self.db = sqlite3.connect(':memory:')
-    self.db.enable_load_extension(True)
-    self.db.load_extension(get_sqlite_protobuf_library())
-
-  def tearDown(self):
-    self.db.close()
-
+class TestProtobufLoad(SQLiteProtobufTestCase, unittest.TestCase):
+  __PROTOBUF__ = '''
+  syntax = "proto2";
+  message Empty { }
+  '''
+  
   def test_load_enabled(self):
     self.db.enable_load_extension(True)
-    self.db.execute('SELECT protobuf_load(?)', (get_addressbook_library(),))
+    self.protobuf_load(self.proto.protobuf_library)
 
   def test_load_disabled(self):
     self.db.enable_load_extension(False)
-    with self.assertRaisesRegexp(sqlite3.OperationalError, 'Extension loading'):
-      self.db.execute('SELECT protobuf_load(?)', (get_addressbook_library(),))
+    with self.assertRaisesRegex(sqlite3.OperationalError, 'Extension loading'):
+      self.protobuf_load(self.proto.protobuf_library)
 
 
 if __name__ == '__main__':

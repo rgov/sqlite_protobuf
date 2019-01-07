@@ -13,6 +13,7 @@ target_include_directories(sqlite_protobuf
 )
 target_link_libraries(sqlite_protobuf
     PUBLIC
+    dl
     ${PROTOBUF_LIBRARIES}
     ${SQLITE3_LIBRARIES}
 )

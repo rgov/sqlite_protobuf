@@ -19,6 +19,10 @@ Tests written in Python use the [`unittest`][pyunittest] unit testing framework.
 
 [pyunittest]: https://docs.python.org/3/library/unittest.html
 
+Unit tests should ordinarily inherit from the `SQLiteProtobufTestCase` class,
+which handles setting up the database, compiling Protobuf definitions, and
+issuing SQL queries.
+
 Normally, `unittest` performs its own test discovery. To inform CTest about each
 unit test, CMake runs the `list_tests.py` tool and parses its output. It is
 important that tests do not expect any resources to have been built at module
@@ -29,4 +33,4 @@ Pipfile. When a test is run, the working directory is the test's *source
 directory*. The environment variable `CMAKE_CURRENT_BINARY_DIR` is set to the
 corresponding CMake binary directory relative to the build directory.
 
-[Pipenv]: https://github.com/pypa/pipenvv
+[Pipenv]: https://github.com/pypa/pipenv
