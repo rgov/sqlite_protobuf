@@ -361,8 +361,13 @@ int sqlite3_sqliteprotobuf_init(sqlite3 *db,
     
     SQLITE_EXTENSION_INIT2(pApi);
     
-    // TODO: Check that we are using at least version 3.13.0
-    // (which is when SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION was added)
+    // Check that we are compatible with this version of SQLite
+    // 3.13.0 - SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION added
+    if (sqlite3_libversion_number() < 3013000) {
+        *pzErrMsg = sqlite3_mprintf(
+            "sqlite_protobuf requires SQLite 3.13.0 or later");
+        return SQLITE_ERROR;
+    }
     
     err = sqlite3_create_function(db, "protobuf_load", 1,
         SQLITE_UTF8, 0, protobuf_load, 0, 0);
