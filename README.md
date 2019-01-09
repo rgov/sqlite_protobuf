@@ -68,25 +68,18 @@ on Linux).
 
 ## API
 
-### protobuf\_debug\_string(_protobuf_, _type\_name_)
+### protobuf\_enum(_enum\_type_)
 
-**This function is not yet implemented.**
+Returns a table with values from the specified enum type, with `number` and
+`name` columns.
 
-This function would deserialize the message and call `Message::DebugString()` on
-it.
+    SELECT number
+      FROM protobuf_enum("Person.PhoneType")
+     WHERE name = "MOBILE";
 
-### protobuf\_each(_protobuf_, _type\_name_, _path_)
+Note that an enum with the `allow_alias` option set can have multiple values
+with the same number.
 
-**This function is not yet implemented.**
-
-Ideally this would be a table-valued function that is similar to
-[`json_each()`][json1_each] from the JSON1 extension:
-
-    SELECT protobuf_extract(protobuf, "Person", "$.name")
-      FROM people, protobuf_each(people, "Person", "$.phones")
-     WHERE protobuf_each.value LIKE "607-%";
-
-[json1_each]: https://www.sqlite.org/json1.html#jeach
 
 ### protobuf\_extract(_protobuf_, _type\_name_, _path_)
 
@@ -109,14 +102,6 @@ an error.
 If a field is optional and not provided, the default value is returned.
 
 
-### protobuf\_has\_field(_protobuf_, _type\_name_, _path_)
-
-**This function is not yet implemented.**
-
-Since `protobuf_extract` returns the default value for an unpopulated optional
-field, it would be useful to be able to know whether the field exists or not.
-
-
 ### protobuf\_load(_lib\_path_)
 
 Before a serialized message can be parsed, the message type descriptor must be
@@ -131,3 +116,30 @@ if untrusted users can send arbitrary queries (such as through SQL injection),
 this function could be leveraged to gain code execution on your database host.
 
 [ext-load]: https://www.sqlite.org/c3ref/enable_load_extension.html
+
+
+## API Wishlist
+
+**These functions are not yet implemented.**
+
+### protobuf\_debug\_string(_protobuf_, _type\_name_)
+
+This function would deserialize the message and call `Message::DebugString()` on
+it.
+
+### protobuf\_each(_protobuf_, _type\_name_, _path_)
+
+Ideally this would be a table-valued function that is similar to
+[`json_each()`][json1_each] from the JSON1 extension:
+
+    SELECT protobuf_extract(protobuf, "Person", "$.name")
+      FROM people, protobuf_each(people, "Person", "$.phones")
+     WHERE protobuf_each.value LIKE "607-%";
+
+[json1_each]: https://www.sqlite.org/json1.html#jeach
+
+
+### protobuf\_has\_field(_protobuf_, _type\_name_, _path_)
+
+Since `protobuf_extract` returns the default value for an unpopulated optional
+field, it would be useful to be able to know whether the field exists or not.
