@@ -23,11 +23,13 @@ int sqlite3_sqliteprotobuf_init(sqlite3 *db,
     
     // Run each register_* function and abort if any of them fails
     int (*register_fns[])(sqlite3 *, char **, const sqlite3_api_routines *) = {
-        register_protobuf_load,
+        register_protobuf_enum_values,
         register_protobuf_extract,
+        register_protobuf_load,
     };
     
-    for (int i = 0; i < (sizeof(register_fns)/sizeof(register_fns[0])); i ++) {
+    int nfuncs = sizeof(register_fns) / sizeof(register_fns[0]);
+    for (int i = 0; i < nfuncs; i ++) {
         int err = (register_fns[i])(db, pzErrMsg, pApi);
         if (err != SQLITE_OK) return err;
     }

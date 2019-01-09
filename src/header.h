@@ -10,7 +10,9 @@
                      const sqlite3_api_routines *pApi)
 
 
-DECLARE_(protobuf_load);
+DECLARE_(protobuf_enum_values);
 DECLARE_(protobuf_extract);
+DECLARE_(protobuf_load);
+
 
 #endif

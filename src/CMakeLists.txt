@@ -4,8 +4,9 @@ find_package(SQLite3 REQUIRED)
 
 add_library(sqlite_protobuf SHARED
     extension_main.cpp
-    protobuf_load.cpp
+    protobuf_enum_values.cpp
     protobuf_extract.cpp
+    protobuf_load.cpp
 )
 set_property(TARGET sqlite_protobuf PROPERTY CXX_STANDARD 11)
 target_include_directories(sqlite_protobuf
