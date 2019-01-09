@@ -6,14 +6,7 @@
 SQLITE_EXTENSION_INIT3
 
 #include "header.h"
-
-
-/// Convenience method for constructing a std::string from sqlite3_value
-static const std::string string_from_sqlite3_value(sqlite3_value *value)
-{
-    return std::string(reinterpret_cast<const char*>(sqlite3_value_text(value)),
-                        static_cast<size_t>(sqlite3_value_bytes(value)));
-}
+#include "utilities.h"
 
 
 /// Loads a shared library that presumably contains message descriptors. Returns

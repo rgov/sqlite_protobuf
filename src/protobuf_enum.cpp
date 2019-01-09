@@ -9,6 +9,7 @@
 SQLITE_EXTENSION_INIT3
 
 #include "header.h"
+#include "utilities.h"
 
 using google::protobuf::DescriptorPool;
 using google::protobuf::EnumDescriptor;
@@ -236,14 +237,6 @@ static int xBestIndex(sqlite3_vtab *tab, sqlite3_index_info *pIdxInfo)
     }
 
     return SQLITE_OK;
-}
-
-
-/// Convenience method for constructing a std::string from sqlite3_value
-static const std::string string_from_sqlite3_value(sqlite3_value *value)
-{
-    return std::string(reinterpret_cast<const char*>(sqlite3_value_text(value)),
-                        static_cast<size_t>(sqlite3_value_bytes(value)));
 }
 
 

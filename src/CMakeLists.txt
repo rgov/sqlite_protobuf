@@ -7,6 +7,7 @@ add_library(sqlite_protobuf SHARED
     protobuf_enum.cpp
     protobuf_extract.cpp
     protobuf_load.cpp
+    utilities.cpp
 )
 set_property(TARGET sqlite_protobuf PROPERTY CXX_STANDARD 11)
 target_include_directories(sqlite_protobuf
