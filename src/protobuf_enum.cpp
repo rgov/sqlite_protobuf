@@ -24,12 +24,15 @@ enum {
     COLUMN_ENUM,
 };
 
-// The indexing strategies used by xBestIndex and xFilter
+// The indexing strategies used by MODULE_FUNC(xBestIndex) and MODULE_FUNC(xFilter)
 enum {
     LOOKUP_ALL,
     LOOKUP_BY_NUMBER,
     LOOKUP_BY_NAME,
 };
+
+
+#define MODULE_FUNC(func) protobuf_enum ## _ ## func
 
 
 /* enum_cursor is a subclass of sqlite3_vtab_cursor which will
@@ -46,7 +49,7 @@ struct enum_cursor {
 };
 
 
-static int xConnect(
+static int MODULE_FUNC(xConnect) (
     sqlite3 *db,
     void *pAux,
     int argc, const char * const *argv,
@@ -72,7 +75,7 @@ static int xConnect(
 /*
 ** This method is the destructor for enum_cursor objects.
 */
-static int xDisconnect(sqlite3_vtab *pVtab)
+static int MODULE_FUNC(xDisconnect) (sqlite3_vtab *pVtab)
 {
     sqlite3_free(pVtab);
     return SQLITE_OK;
@@ -82,7 +85,7 @@ static int xDisconnect(sqlite3_vtab *pVtab)
 /*
 ** Constructor for a new enum_cursor object.
 */
-static int xOpen(sqlite3_vtab *p, sqlite3_vtab_cursor **ppCursor)
+static int MODULE_FUNC(xOpen) (sqlite3_vtab *p, sqlite3_vtab_cursor **ppCursor)
 {
     enum_cursor *cursor = (enum_cursor *)sqlite3_malloc(sizeof(*cursor));
     if (!cursor)
@@ -95,7 +98,7 @@ static int xOpen(sqlite3_vtab *p, sqlite3_vtab_cursor **ppCursor)
 /*
 ** Destructor for a enum_cursor.
 */
-static int xClose(sqlite3_vtab_cursor *cur)
+static int MODULE_FUNC(xClose) (sqlite3_vtab_cursor *cur)
 {
     sqlite3_free(cur);
     return SQLITE_OK;
@@ -104,7 +107,7 @@ static int xClose(sqlite3_vtab_cursor *cur)
 /*
 ** Advance a enum_cursor to its next row of output.
 */
-static int xNext(sqlite3_vtab_cursor *cur)
+static int MODULE_FUNC(xNext) (sqlite3_vtab_cursor *cur)
 {
     enum_cursor *cursor = (enum_cursor *)cur;
     cursor->index += 1;
@@ -117,7 +120,7 @@ static int xNext(sqlite3_vtab_cursor *cur)
 ** first row returned is assigned rowid value 1, and each subsequent
 ** row a value 1 more than that of the previous.
 */
-static int xRowid(sqlite3_vtab_cursor *cur, sqlite_int64 *pRowid)
+static int MODULE_FUNC(xRowid) (sqlite3_vtab_cursor *cur, sqlite_int64 *pRowid)
 {
     enum_cursor *cursor = (enum_cursor *)cur;
     *pRowid = cursor->index;
@@ -129,7 +132,7 @@ static int xRowid(sqlite3_vtab_cursor *cur, sqlite_int64 *pRowid)
 ** Return TRUE if the cursor has been moved off of the last
 ** row of output.
 */
-static int xEof(sqlite3_vtab_cursor *cur)
+static int MODULE_FUNC(xEof) (sqlite3_vtab_cursor *cur)
 {
     enum_cursor *cursor = (enum_cursor *)cur;
     return !cursor->descriptor || cursor->isInvalid ||
@@ -141,7 +144,7 @@ static int xEof(sqlite3_vtab_cursor *cur)
 ** Return values of columns for the row at which the enum_cursor
 ** is currently pointing.
 */
-static int xColumn(sqlite3_vtab_cursor *cur, sqlite3_context *ctx, int i)
+static int MODULE_FUNC(xColumn) (sqlite3_vtab_cursor *cur, sqlite3_context *ctx, int i)
 {
     enum_cursor *cursor = (enum_cursor *)cur;
     switch (i) {
@@ -161,7 +164,7 @@ static int xColumn(sqlite3_vtab_cursor *cur, sqlite3_context *ctx, int i)
     return SQLITE_OK;
 }
 
-static int xBestIndex(sqlite3_vtab *tab, sqlite3_index_info *pIdxInfo)
+static int MODULE_FUNC(xBestIndex) (sqlite3_vtab *tab, sqlite3_index_info *pIdxInfo)
 {
     // Loop over the constraints to find useful ones -- namely, ones that pin
     // a column to a specific value
@@ -214,7 +217,7 @@ static int xBestIndex(sqlite3_vtab *tab, sqlite3_index_info *pIdxInfo)
     }
     
     // Copy the values of our constraints (i.e., the right-hand sides of the
-    // equality assertions) into the arguments that will be passed to xFilter.
+    // equality assertions) into the arguments that will be passed to MODULE_FUNC(xFilter).
     //     argv[0] = enum type name
     //     argv[1] = number or name to lookup
     int argIdx = 1;
@@ -245,7 +248,7 @@ static int xBestIndex(sqlite3_vtab *tab, sqlite3_index_info *pIdxInfo)
 ** is pointing at the first row, or pointing off the end of the table
 ** (so that seriesEof() will return true) if the table is empty.
 */
-static int xFilter(
+static int MODULE_FUNC(xFilter) (
     sqlite3_vtab_cursor *pVtabCursor, 
     int idxNum, const char *idxStr,
     int argc, sqlite3_value **argv
@@ -310,17 +313,17 @@ static int xFilter(
 static sqlite3_module module = {
   0,                         /* iVersion */
   0,                         /* xCreate */
-  xConnect,                  /* xConnect - required */
-  xBestIndex,                /* xBestIndex - required */
-  xDisconnect,               /* xDisconnect - required */
+  MODULE_FUNC(xConnect),     /* xConnect - required */
+  MODULE_FUNC(xBestIndex),   /* xBestIndex - required */
+  MODULE_FUNC(xDisconnect),  /* xDisconnect - required */
   0,                         /* xDestroy */
-  xOpen,                     /* xOpen - open a cursor - required */
-  xClose,                    /* xClose - close a cursor - required */
-  xFilter,                   /* xFilter - configure scan constraints - required */
-  xNext,                     /* xNext - advance a cursor - required */
-  xEof,                      /* xEof - check for end of scan - required */
-  xColumn,                   /* xColumn - read data - required */
-  xRowid,                    /* xRowid - read data - required */
+  MODULE_FUNC(xOpen),        /* xOpen - open a cursor - required */
+  MODULE_FUNC(xClose),       /* xClose - close a cursor - required */
+  MODULE_FUNC(xFilter),      /* xFilter - configure scan constraints - required */
+  MODULE_FUNC(xNext),        /* xNext - advance a cursor - required */
+  MODULE_FUNC(xEof),         /* xEof - check for end of scan - required */
+  MODULE_FUNC(xColumn),      /* xColumn - read data - required */
+  MODULE_FUNC(xRowid),       /* xRowid - read data - required */
   0,                         /* xUpdate */
   0,                         /* xBegin */
   0,                         /* xSync */
