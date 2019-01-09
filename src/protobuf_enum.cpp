@@ -1,6 +1,8 @@
 #include <strings.h>
+#include <stdio.h>
 
 #include <google/protobuf/descriptor.h>
+#include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/descriptor_database.h>
 
 #include <sqlite3ext.h>
@@ -10,9 +12,8 @@ SQLITE_EXTENSION_INIT3
 
 using google::protobuf::DescriptorPool;
 using google::protobuf::EnumDescriptor;
+using google::protobuf::EnumValueDescriptor;
 
-
-// Based on: https://github.com/mackyle/sqlite/blob/master/ext/misc/series.c
 
 // The column indexes, corresponding to the order of the columns in the CREATE
 // TABLE statement in xConnect
@@ -24,8 +25,8 @@ enum {
 
 // The indexing strategies used by xBestIndex and xFilter
 enum {
+    LOOKUP_ALL,
     LOOKUP_BY_NUMBER,
-    LOOKUP_BY_NUMBER_COMPARE_NAME,
     LOOKUP_BY_NAME,
 };
 
@@ -39,6 +40,8 @@ struct enum_cursor {
     sqlite3_vtab_cursor base;
     const EnumDescriptor *descriptor;
     sqlite3_int64 index;
+    sqlite3_int64 stopIndex;
+    bool isInvalid;
 };
 
 
@@ -54,7 +57,7 @@ static int xConnect(
         "    number INTEGER PRIMARY KEY,"
         "    name TEXT,"
         "    enum TEXT HIDDEN"
-        ") WITHOUT ROWID");
+        ")");
     if (err != SQLITE_OK) return err;
 
     *ppVtab = (sqlite3_vtab *)sqlite3_malloc(sizeof(**ppVtab));
@@ -116,7 +119,7 @@ static int xNext(sqlite3_vtab_cursor *cur)
 static int xRowid(sqlite3_vtab_cursor *cur, sqlite_int64 *pRowid)
 {
     enum_cursor *cursor = (enum_cursor *)cur;
-    *pRowid = cursor->descriptor->value(cursor->index)->number();
+    *pRowid = cursor->index;
     return SQLITE_OK;
 }
 
@@ -128,8 +131,8 @@ static int xRowid(sqlite3_vtab_cursor *cur, sqlite_int64 *pRowid)
 static int xEof(sqlite3_vtab_cursor *cur)
 {
     enum_cursor *cursor = (enum_cursor *)cur;
-    return !cursor->descriptor ||
-        cursor->index >= cursor->descriptor->value_count();
+    return !cursor->descriptor || cursor->isInvalid ||
+        cursor->index >= cursor->stopIndex;
 }
 
 
@@ -170,15 +173,15 @@ static int xBestIndex(sqlite3_vtab *tab, sqlite3_index_info *pIdxInfo)
         if (!constraint->usable) continue;
         if (constraint->op == SQLITE_INDEX_CONSTRAINT_EQ) {
             switch(constraint->iColumn) {
-                case COLUMN_NUMBER:
-                    numberEqConstraintIdx = i;
-                    break;
-                case COLUMN_NAME:
-                    numberEqConstraintIdx = i;
-                    break;
-                case COLUMN_ENUM:
-                    enumEqConstraintIdx = i;
-                    break;
+            case COLUMN_NUMBER:
+                numberEqConstraintIdx = i;
+                break;
+            case COLUMN_NAME:
+                nameEqConstraintIdx = i;
+                break;
+            case COLUMN_ENUM:
+                enumEqConstraintIdx = i;
+                break;
             }
         }
     }
@@ -188,16 +191,11 @@ static int xBestIndex(sqlite3_vtab *tab, sqlite3_index_info *pIdxInfo)
         return SQLITE_CONSTRAINT;
     }
     
-    // If we have a constraint on the name or number, we can only return zero
-    // or one matching rows. Tell SQLite it can be more efficient in this case.
-    if (numberEqConstraintIdx != -1 || nameEqConstraintIdx != -1) {
+    // If we have a constraint on the name, we can only return zero or one
+    // matching rows. We can't say the same for a constraint on the number,
+    // in case aliases are allowed. This allows SQLite to be more efficient.
+    if (nameEqConstraintIdx >= 0) {
         pIdxInfo->idxFlags |= SQLITE_INDEX_SCAN_UNIQUE;
-    }
-    
-    // If we are asked for rows ordered only by the number (ascending), good
-    // news: The rows will be returned already sorted.
-    if (pIdxInfo->nOrderBy == 1 && !pIdxInfo->aOrderBy[0].desc) {
-        pIdxInfo->orderByConsumed = 1;
     }
     
     // Decide on the indexing strategy to use. Also, tell SQLite the cost of
@@ -205,34 +203,36 @@ static int xBestIndex(sqlite3_vtab *tab, sqlite3_index_info *pIdxInfo)
     // plans.
     if (numberEqConstraintIdx >= 0 && nameEqConstraintIdx < 0) {
         pIdxInfo->idxNum = LOOKUP_BY_NUMBER;
-        pIdxInfo->estimatedCost = 1;  
-    } else if (numberEqConstraintIdx >= 0 && nameEqConstraintIdx >= 0) {
-        pIdxInfo->idxNum = LOOKUP_BY_NUMBER_COMPARE_NAME;
-        pIdxInfo->estimatedCost = 2;
-    } else if (numberEqConstraintIdx < 0 && nameEqConstraintIdx >= 0) {
+        pIdxInfo->estimatedCost = 1;
+    } else if (nameEqConstraintIdx >= 0) {
         pIdxInfo->idxNum = LOOKUP_BY_NAME;
         pIdxInfo->estimatedCost = 5;
+    } else {
+        pIdxInfo->idxNum = LOOKUP_ALL;
+        pIdxInfo->estimatedCost = 100;
     }
     
     // Copy the values of our constraints (i.e., the right-hand sides of the
     // equality assertions) into the arguments that will be passed to xFilter.
-    // Also, set .omit so that SQLite does not double check our output matches
-    // the constraints.
-    int argvIdx = 1;
-    if (enumEqConstraintIdx >= 0) {
-        auto *c = &pIdxInfo->aConstraintUsage[enumEqConstraintIdx];
-        c->argvIndex = argvIdx ++;
-        c->omit = 1;
+    //     argv[0] = enum type name
+    //     argv[1] = number or name to lookup
+    int argIdx = 1;
+    pIdxInfo->aConstraintUsage[enumEqConstraintIdx].argvIndex = argIdx ++;
+    switch (pIdxInfo->idxNum) {
+    case LOOKUP_BY_NUMBER:
+        pIdxInfo->aConstraintUsage[numberEqConstraintIdx].argvIndex = argIdx ++;
+        break;
+    case LOOKUP_BY_NAME:
+        pIdxInfo->aConstraintUsage[nameEqConstraintIdx].argvIndex = argIdx ++;
+        break;
     }
-    if (numberEqConstraintIdx >= 0) {
-        auto *c = &pIdxInfo->aConstraintUsage[numberEqConstraintIdx];
-        c->argvIndex = argvIdx ++;
-        c->omit = 1;
-    }
-    if (nameEqConstraintIdx >= 0) {
-        auto *c = &pIdxInfo->aConstraintUsage[nameEqConstraintIdx];
-        c->argvIndex = argvIdx ++;
-        c->omit = 1;
+
+    // For some constraints, SQLite does not need to double check that our
+    // output matches the constraints.
+    for (int constraintIdx : { enumEqConstraintIdx, nameEqConstraintIdx }) {
+        if (constraintIdx >= 0) {
+            pIdxInfo->aConstraintUsage[constraintIdx].omit = 1;
+        }
     }
 
     return SQLITE_OK;
@@ -270,10 +270,45 @@ static int xFilter(
         return SQLITE_ERROR;
     }
     
-    // Rewind the current index to the first entry in the enum
+    // Set the cursor to iterate over the whole set of enum values, but this
+    // may be overridden by a specific strategy.
     cursor->index = 0;
+    cursor->stopIndex = cursor->descriptor->value_count();
     
-    // TODO: Figure out what to do with the constraints
+    // If there's no particular index strategy, we don't need to do anything
+    // further.
+    if (idxNum == LOOKUP_ALL)
+        return SQLITE_OK;
+    
+    // Otherwise, find the value by our constraint argument
+    const EnumValueDescriptor *value_desc;
+    switch (idxNum) {
+    case LOOKUP_BY_NUMBER:
+        value_desc = cursor->descriptor->FindValueByNumber(
+            sqlite3_value_int(argv[1]));
+        break;
+    case LOOKUP_BY_NAME:
+        value_desc = cursor->descriptor->FindValueByName(
+            string_from_sqlite3_value(argv[1]));
+        break;
+    }
+    
+    if (!value_desc) {
+        cursor->isInvalid = 1;
+        return SQLITE_OK;
+    }
+    
+    // Set the starting index to the index of the result
+    cursor->index = value_desc->index();
+    
+    if (idxNum == LOOKUP_BY_NUMBER && 
+        cursor->descriptor->options().allow_alias()) {
+        // In this case, we cannot set an upper bound, because we need there
+        // may be additional values with the same number.
+    } else {
+        // Set the upper bound to the next entry
+        cursor->stopIndex = cursor->index + 1;
+    }
     
     return SQLITE_OK;
 }
