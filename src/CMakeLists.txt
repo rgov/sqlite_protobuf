@@ -4,7 +4,7 @@ find_package(SQLite3 REQUIRED)
 
 add_library(sqlite_protobuf SHARED
     extension_main.cpp
-    protobuf_enum_values.cpp
+    protobuf_enum.cpp
     protobuf_extract.cpp
     protobuf_load.cpp
 )

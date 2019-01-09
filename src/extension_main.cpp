@@ -23,7 +23,7 @@ int sqlite3_sqliteprotobuf_init(sqlite3 *db,
     
     // Run each register_* function and abort if any of them fails
     int (*register_fns[])(sqlite3 *, char **, const sqlite3_api_routines *) = {
-        register_protobuf_enum_values,
+        register_protobuf_enum,
         register_protobuf_extract,
         register_protobuf_load,
     };

@@ -303,7 +303,7 @@ static sqlite3_module module = {
 };
 
 
-DECLARE_(protobuf_enum_values)
+DECLARE_(protobuf_enum)
 {
-    return sqlite3_create_module(db, "protobuf_enum_values", &module, 0);
+    return sqlite3_create_module(db, "protobuf_enum", &module, 0);
 }
