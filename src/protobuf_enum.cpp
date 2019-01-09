@@ -35,10 +35,8 @@ enum {
 #define MODULE_FUNC(func) protobuf_enum ## _ ## func
 
 
-/* enum_cursor is a subclass of sqlite3_vtab_cursor which will
-** serve as the underlying representation of a cursor that scans
-** over rows of the result
-*/
+// enum_cursor is a subclass of sqlite3_vtab_cursor which holds metadata that
+// allows us to iterate over the EnumDescriptor
 typedef struct enum_cursor enum_cursor;
 struct enum_cursor {
     sqlite3_vtab_cursor base;
@@ -49,6 +47,7 @@ struct enum_cursor {
 };
 
 
+/// Connect to the eponymous virtual table
 static int MODULE_FUNC(xConnect) (
     sqlite3 *db,
     void *pAux,
@@ -72,9 +71,7 @@ static int MODULE_FUNC(xConnect) (
 }
 
 
-/*
-** This method is the destructor for enum_cursor objects.
-*/
+/// Undoes xOpen
 static int MODULE_FUNC(xDisconnect) (sqlite3_vtab *pVtab)
 {
     sqlite3_free(pVtab);
@@ -82,9 +79,7 @@ static int MODULE_FUNC(xDisconnect) (sqlite3_vtab *pVtab)
 }
 
 
-/*
-** Constructor for a new enum_cursor object.
-*/
+/// Constructor enum_cursor objects
 static int MODULE_FUNC(xOpen) (sqlite3_vtab *p, sqlite3_vtab_cursor **ppCursor)
 {
     enum_cursor *cursor = (enum_cursor *)sqlite3_malloc(sizeof(*cursor));
@@ -95,18 +90,14 @@ static int MODULE_FUNC(xOpen) (sqlite3_vtab *p, sqlite3_vtab_cursor **ppCursor)
     return SQLITE_OK;
 }
 
-/*
-** Destructor for a enum_cursor.
-*/
+/// Destructor enum_cursor objects
 static int MODULE_FUNC(xClose) (sqlite3_vtab_cursor *cur)
 {
     sqlite3_free(cur);
     return SQLITE_OK;
 }
 
-/*
-** Advance a enum_cursor to its next row of output.
-*/
+/// Advance the index to the next enum value
 static int MODULE_FUNC(xNext) (sqlite3_vtab_cursor *cur)
 {
     enum_cursor *cursor = (enum_cursor *)cur;
@@ -115,11 +106,7 @@ static int MODULE_FUNC(xNext) (sqlite3_vtab_cursor *cur)
 }
 
 
-/*
-** Return the rowid for the current row. In this implementation, the
-** first row returned is assigned rowid value 1, and each subsequent
-** row a value 1 more than that of the previous.
-*/
+/// Returns the current index
 static int MODULE_FUNC(xRowid) (sqlite3_vtab_cursor *cur, sqlite_int64 *pRowid)
 {
     enum_cursor *cursor = (enum_cursor *)cur;
@@ -128,10 +115,7 @@ static int MODULE_FUNC(xRowid) (sqlite3_vtab_cursor *cur, sqlite_int64 *pRowid)
 }
 
 
-/*
-** Return TRUE if the cursor has been moved off of the last
-** row of output.
-*/
+/// Returns true if the cursor is no longer pointing at a valid enum value
 static int MODULE_FUNC(xEof) (sqlite3_vtab_cursor *cur)
 {
     enum_cursor *cursor = (enum_cursor *)cur;
@@ -140,12 +124,12 @@ static int MODULE_FUNC(xEof) (sqlite3_vtab_cursor *cur)
 }
 
 
-/*
-** Return values of columns for the row at which the enum_cursor
-** is currently pointing.
-*/
-static int MODULE_FUNC(xColumn) (sqlite3_vtab_cursor *cur, sqlite3_context *ctx, int i)
-{
+/// Return the fields in a given cell of the table
+static int MODULE_FUNC(xColumn) (
+    sqlite3_vtab_cursor *cur,
+    sqlite3_context *ctx,
+    int i
+) {
     enum_cursor *cursor = (enum_cursor *)cur;
     switch (i) {
     case COLUMN_NUMBER:
@@ -164,7 +148,12 @@ static int MODULE_FUNC(xColumn) (sqlite3_vtab_cursor *cur, sqlite3_context *ctx,
     return SQLITE_OK;
 }
 
-static int MODULE_FUNC(xBestIndex) (sqlite3_vtab *tab, sqlite3_index_info *pIdxInfo)
+
+/// 
+static int MODULE_FUNC(xBestIndex) (
+    sqlite3_vtab *tab,
+    sqlite3_index_info *pIdxInfo
+)
 {
     // Loop over the constraints to find useful ones -- namely, ones that pin
     // a column to a specific value
@@ -243,11 +232,8 @@ static int MODULE_FUNC(xBestIndex) (sqlite3_vtab *tab, sqlite3_index_info *pIdxI
 }
 
 
-/*
-** This routine should initialize the cursor and position it so that it
-** is pointing at the first row, or pointing off the end of the table
-** (so that seriesEof() will return true) if the table is empty.
-*/
+/// Initialize the enum_cursor with information about the enum type, and
+/// position it at the start of the relevant results.
 static int MODULE_FUNC(xFilter) (
     sqlite3_vtab_cursor *pVtabCursor, 
     int idxNum, const char *idxStr,
