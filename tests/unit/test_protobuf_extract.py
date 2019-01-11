@@ -48,6 +48,7 @@ class TestProtobufExtract(SQLiteProtobufTestCase, unittest.TestCase):
     repeated EnumValues repeated_enum_field = 116;
 
     repeated TestMessage children = 1000;
+    optional TestMessage optional_child = 1001;
   }
   '''
 
@@ -107,6 +108,10 @@ class TestProtobufExtract(SQLiteProtobufTestCase, unittest.TestCase):
       20,  # some index, must match path below
       self.protobuf_extract(msg, 'TestMessage', '$.children[20].int32_field')
     )
+    self.assertEqual(
+      97,  # negative index, must correspond to path below
+      self.protobuf_extract(msg, 'TestMessage', '$.children[-3].int32_field')
+    )
   
   def test_extract_child_message(self):
     msg = self.proto.TestMessage()
@@ -123,6 +128,18 @@ class TestProtobufExtract(SQLiteProtobufTestCase, unittest.TestCase):
       msg = self.proto.TestMessage()
       self.assertCorrectSQLType(t, self.protobuf_extract_result_type(msg,
         'TestMessage', '$.%s_field' % t))
+  
+  def test_extract_child_of_missing_optional_message(self):
+    msg = self.proto.TestMessage()
+    self.assertEqual(
+      None,
+      self.protobuf_extract(msg, 'TestMessage', '$.optional_child.int32_field')
+    )
+  
+  def test_extract_child_of_missing_optional_nonmessage(self):
+    msg = self.proto.TestMessage()
+    with self.assertRaises(sqlite3.OperationalError):
+      self.protobuf_extract(msg, 'TestMessage', '$.int32_field.foobar')
 
   def test_extract_stored_type(self):
     types = set(self.protobuf_to_sql_types.keys()) - set(('enum', 'null'))
@@ -153,6 +170,32 @@ class TestProtobufExtract(SQLiteProtobufTestCase, unittest.TestCase):
     msg.repeated_enum_field.append(self.proto.TestMessage.EnumValues.Value('B'))
     self.assertCorrectSQLType('enum', self.protobuf_extract_result_type(msg,
       'TestMessage', '$.repeated_enum_field[0]'))
+  
+  def test_extract_enum_special_children(self):
+    msg = self.proto.TestMessage()
+    msg.enum_field = self.proto.TestMessage.EnumValues.Value('B')
+    self.assertEqual(
+      self.proto.TestMessage.EnumValues.Value('B'),
+      self.protobuf_extract(msg, 'TestMessage', '$.enum_field.number')
+    )
+    self.assertEqual(
+      'B',
+      self.protobuf_extract(msg, 'TestMessage', '$.enum_field.name')
+    )
+    with self.assertRaises(sqlite3.OperationalError):
+      self.protobuf_extract(msg, 'TestMessage', '$.enum_field.buzz')
+  
+  def test_extract_bad_path_traversal_error(self):
+    msg = self.proto.TestMessage()
+    msg.int32_field = 1337
+    with self.assertRaises(sqlite3.OperationalError) as cm:
+      self.protobuf_extract(msg, 'TestMessage', '$.int32_field.buzz')
+    err1 = str(cm.exception)
+    with self.assertRaises(sqlite3.OperationalError) as cm:
+      self.protobuf_extract(msg, 'TestMessage', '$.enum_field.buzz')
+    err2 = str(cm.exception)
+    self.assertEqual(err1, err2)
+
 
 if __name__ == '__main__':
   unittest.main()

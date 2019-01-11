@@ -96,10 +96,17 @@ refers to the root object, followed by zero or more field designations
 The return type of this function depends on the underlying field type. Messages
 are returned serialized.
 
-If an index is out of bounds, the function returns `null` rather than throwing
-an error.
+Enum values are returned as integers. The virtual child `.name` will return the
+name of the enum value. If multiple aliases exist for the value, the first one
+will be returned. The virtual child `.number` also exists but is the same as
+omitting it.
 
-If a field is optional and not provided, the default value is returned.
+Negative indexes are allowed. If an index is out of bounds, the function
+returns `null` rather than throwing an error.
+
+If a field is optional and not present, the default value is returned. For an
+optional message field that is not present, `null` is returned regardless of the
+subpath; an optional child's default value is not considered.
 
 
 ### protobuf\_load(_lib\_path_)
