@@ -13,9 +13,49 @@ SQLITE_EXTENSION_INIT3
 using google::protobuf::Descriptor;
 using google::protobuf::DescriptorPool;
 using google::protobuf::DynamicMessageFactory;
+using google::protobuf::EnumDescriptor;
+using google::protobuf::EnumValueDescriptor;
 using google::protobuf::FieldDescriptor;
 using google::protobuf::Message;
 using google::protobuf::Reflection;
+
+
+/// For enum fields, handle the special suffix paths .name and .number
+static bool handle_special_enum_path(sqlite3_context *context,
+                                     const EnumDescriptor *enum_descriptor,
+                                     int value,
+                                     const std::string& path,
+                                     std::string::const_iterator& it)
+{
+    // Get the remainder of the path
+    std::string rest = path.substr(std::distance(path.begin(), it));
+    
+    if (rest == "" || rest == ".number")
+    {
+        sqlite3_result_int(context, value);
+        return true;
+    } 
+    else if (rest == ".name")
+    {
+        const EnumValueDescriptor *value_descriptor =
+            enum_descriptor->FindValueByNumber(value);
+        if (!value_descriptor)
+        {
+            sqlite3_result_error(context, "Enum value not found", -1);
+            return false;
+        }
+        
+        sqlite3_result_text(context,
+            value_descriptor->name().c_str(),
+            value_descriptor->name().length(),
+            SQLITE_TRANSIENT);
+        return true;
+    }
+    
+    // This error message should match what happens for non-enums also
+    sqlite3_result_error(context, "Path traverses non-message elements", -1);
+    return false;
+}
 
 
 /// Return the element (or elements) 
@@ -96,6 +136,20 @@ static void protobuf_extract(sqlite3_context *context,
 
         // If the field is optional, and it is not provided, return the default
         if (field->is_optional() && !reflection->HasField(*message, field)) {
+            // Is there anything left in the path?
+            if (it != path.end()) {
+                switch (field->type())
+                {
+                   case FieldDescriptor::Type::TYPE_ENUM:
+                   case FieldDescriptor::Type::TYPE_MESSAGE:
+                       // Both of these are handled in the main switch below
+                       break;
+                   default:
+                       sqlite3_result_error(context, "Invalid path", -1);
+                       return;
+                }
+            }
+            
             switch(field->cpp_type()) {
             case FieldDescriptor::CppType::CPPTYPE_INT32:
                 sqlite3_result_int(context, field->default_value_int32());
@@ -126,8 +180,10 @@ static void protobuf_extract(sqlite3_context *context,
                     field->default_value_bool() ? 0 : 1);
                 return;
             case FieldDescriptor::CppType::CPPTYPE_ENUM:
-                sqlite3_result_int(context,
-                    field->default_value_enum()->number());
+                handle_special_enum_path(context,
+                    field->default_value_enum()->type(),
+                    field->default_value_enum()->number(),
+                    path, it);
                 return;
             case FieldDescriptor::CppType::CPPTYPE_STRING:
                 switch(field->type()) {
@@ -191,7 +247,9 @@ static void protobuf_extract(sqlite3_context *context,
         }
         
         // Any other type should be the end of the path
-        if (it != path.cend()) {
+        if (it != path.cend()
+            && field->type() != FieldDescriptor::Type::TYPE_ENUM)
+        {
             sqlite3_result_error(context, "Path traverses non-message elements",
                 -1);
             return;
@@ -266,7 +324,8 @@ static void protobuf_extract(sqlite3_context *context,
                 int value = field->is_repeated()
                     ? reflection->GetRepeatedEnumValue(*message, field, field_index)
                     : reflection->GetEnumValue(*message, field);
-                sqlite3_result_int(context, value);
+                handle_special_enum_path(context, field->enum_type(), value,
+                    path, it);
                 return;
             }
             case FieldDescriptor::CppType::CPPTYPE_STRING:

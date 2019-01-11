@@ -96,6 +96,11 @@ refers to the root object, followed by zero or more field designations
 The return type of this function depends on the underlying field type. Messages
 are returned serialized.
 
+Enum values are returned as integers. The special child `.name` will return the
+name of the enum value. If multiple aliases exist for the value, the first one
+will be returned. The special child `.number` also exists but is the same as
+omitting it.
+
 If an index is out of bounds, the function returns `null` rather than throwing
 an error.
 
