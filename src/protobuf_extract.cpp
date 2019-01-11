@@ -70,7 +70,7 @@ static void protobuf_extract(sqlite3_context *context,
     const Message *message = root_message.get();
     
     // Parse the rest
-    std::regex path_element_regex("^\\.([^\\.\\[]+)(?:\\[([0-9]+)\\])?");
+    std::regex path_element_regex("^\\.([^\\.\\[]+)(?:\\[(-?[0-9]+)\\])?");
     std::string::const_iterator it = ++ path.cbegin();  // skip $
     while (it != path.end()) {
         std::smatch m;

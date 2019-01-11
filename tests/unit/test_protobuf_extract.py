@@ -107,6 +107,10 @@ class TestProtobufExtract(SQLiteProtobufTestCase, unittest.TestCase):
       20,  # some index, must match path below
       self.protobuf_extract(msg, 'TestMessage', '$.children[20].int32_field')
     )
+    self.assertEqual(
+      97,  # negative index, must correspond to path below
+      self.protobuf_extract(msg, 'TestMessage', '$.children[-3].int32_field')
+    )
   
   def test_extract_child_message(self):
     msg = self.proto.TestMessage()
