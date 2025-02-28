@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Configure
+      run: mkdir build && cd build && cmake ..
+
+    - name: Build
+      run: cd build && make
+
+    - name: Test
+      run: cd build && ctest --output-on-failure
+

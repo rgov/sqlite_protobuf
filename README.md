@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/rgov/sqlite_protobuf.svg?style=svg)](https://circleci.com/gh/rgov/sqlite_protobuf)
+[![Build](https://github.com/rgov/sqlite_protobuf/actions/workflows/ci.yml/badge.svg)](https://github.com/rgov/sqlite_protobuf/actions/workflows/ci.yml)
 
 # Protobuf Extension for SQLite
 
